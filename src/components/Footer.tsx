@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Footer() {
@@ -7,9 +8,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand Column */}
           <div>
-            <h2 className="text-xl font-bold text-solynta-yellow mb-3">
-              Solynta Energy
-            </h2>
+            <Image
+              src="/logo.png"
+              alt="Solynta Energy"
+              width={150}
+              height={50}
+              className="h-10 w-auto brightness-0 invert mb-3"
+            />
             <p className="text-gray-300">Powering Nigeria with the sun</p>
           </div>
 
@@ -85,7 +90,9 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <a
-                  href="#"
+                  href="https://www.facebook.com/SolyntaEnergy"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-solynta-yellow transition-colors"
                 >
                   Facebook
@@ -93,34 +100,22 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://x.com/SolyntaEnergy"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-solynta-yellow transition-colors"
                 >
-                  Twitter
+                  X (Twitter)
                 </a>
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://www.instagram.com/solyntaenergy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-solynta-yellow transition-colors"
                 >
                   Instagram
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:text-solynta-yellow transition-colors"
-                >
-                  LinkedIn
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:text-solynta-yellow transition-colors"
-                >
-                  YouTube
                 </a>
               </li>
             </ul>

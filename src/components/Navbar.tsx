@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -31,25 +32,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-1 shrink-0">
-            <span className="text-xl font-bold text-solynta-slate tracking-tight">
-              S
-            </span>
-            {/* Yellow circle replacing "o" */}
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-              className="inline-block"
-            >
-              <circle cx="8" cy="8" r="8" fill="#FFCC00" />
-            </svg>
-            <span className="text-xl font-bold text-solynta-slate tracking-tight">
-              lynta Energy
-            </span>
+          <Link href="/" className="shrink-0">
+            <Image
+              src="/logo.png"
+              alt="Solynta Energy"
+              width={150}
+              height={50}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop nav links */}
