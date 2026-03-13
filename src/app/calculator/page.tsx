@@ -23,7 +23,7 @@ export default function CalculatorPage() {
     setError(null);
     setStep(3);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://solyntaflow.uc.r.appspot.com";
       const res = await fetch(`${API_BASE}/api/customer-service/solar-calculator/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
