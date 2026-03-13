@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Package, formatNaira } from "@/data/packages";
 
@@ -6,6 +8,14 @@ interface PackageCardProps {
 }
 
 export default function PackageCard({ pkg }: PackageCardProps) {
+  const handleGetStarted = () => {
+    window.dispatchEvent(
+      new CustomEvent("open-chat", {
+        detail: { message: `I'm interested in the ${pkg.name} (${pkg.size}) package` },
+      })
+    );
+  };
+
   return (
     <div className="relative bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 flex flex-col">
       {/* Popular badge */}
@@ -66,13 +76,21 @@ export default function PackageCard({ pkg }: PackageCardProps) {
         </div>
       </div>
 
-      {/* CTA */}
-      <Link
-        href={`/products/${pkg.slug}`}
-        className="block w-full bg-solynta-yellow text-solynta-slate text-center font-semibold py-2.5 rounded-lg hover:opacity-90 transition-opacity"
-      >
-        View Details
-      </Link>
+      {/* CTAs */}
+      <div className="flex gap-2">
+        <Link
+          href={`/products/${pkg.slug}`}
+          className="flex-1 bg-solynta-yellow text-solynta-slate text-center font-semibold py-2.5 rounded-lg hover:opacity-90 transition-opacity text-sm"
+        >
+          View Details
+        </Link>
+        <button
+          onClick={handleGetStarted}
+          className="flex-1 border border-solynta-yellow text-solynta-slate text-center font-semibold py-2.5 rounded-lg hover:bg-solynta-yellow/20 transition-colors text-sm"
+        >
+          Get Started
+        </button>
+      </div>
     </div>
   );
 }
