@@ -4,6 +4,7 @@ import PopularPackages from "@/components/PopularPackages";
 import HowItWorks from "@/components/HowItWorks";
 import Testimonials from "@/components/Testimonials";
 import CTASection from "@/components/CTASection";
+import GalleryPreview from "@/components/GalleryPreview";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
       <PopularPackages />
       <HowItWorks />
       <Testimonials />
+      <GalleryPreview />
       <CTASection />
     </main>
   );
