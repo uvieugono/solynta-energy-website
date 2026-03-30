@@ -167,6 +167,36 @@ export default function ChatWidget() {
     startChat();
   }, [startChat]);
 
+  const handleCaptureSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const errors = { name: "", phone: "" };
+      if (!captureName.trim()) {
+        errors.name = "Please enter your name.";
+      }
+      const phoneTrimmed = capturePhone.trim();
+      if (!phoneTrimmed) {
+        errors.phone = "Please enter your phone number.";
+      } else if (!/^\+?[\d ()\-.]{7,}$/.test(phoneTrimmed)) {
+        errors.phone = "Please enter a valid phone number (e.g. 0705 300 8625).";
+      }
+      if (errors.name || errors.phone) {
+        setCaptureErrors(errors);
+        return;
+      }
+      const info: ContactInfo = { name: captureName.trim(), phone: phoneTrimmed };
+      localStorage.setItem("solynta_chat_contact", JSON.stringify(info));
+      setContact(info);
+      startChat();
+    },
+    [captureName, capturePhone, startChat]
+  );
+
+  const handleSkip = useCallback(() => {
+    localStorage.setItem("solynta_chat_contact", "skipped");
+    startChat();
+  }, [startChat]);
+
   useEffect(() => {
     const handler = (e: Event) => {
       const customEvent = e as CustomEvent<{ message: string }>;
