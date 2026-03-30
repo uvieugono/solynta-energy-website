@@ -80,6 +80,7 @@ export default function ChatWidget() {
 
   const sendMessage = useCallback(
     async (text: string) => {
+      if (isCapturingRef.current) return;
       const trimmed = text.trim();
       if (!trimmed || loading) return;
 
@@ -91,11 +92,22 @@ export default function ChatWidget() {
 
       try {
         const sourceUrl = window.location.href;
-        const body: { message: string; source_url: string; session_id?: string } = {
+        const body: {
+          message: string;
+          source_url: string;
+          session_id?: string;
+          contact_name?: string;
+          contact_phone?: string;
+        } = {
           message: trimmed,
           source_url: sourceUrl,
         };
         if (sessionId) body.session_id = sessionId;
+        if (contact && !contactSent.current) {
+          body.contact_name = contact.name;
+          body.contact_phone = contact.phone;
+          contactSent.current = true; // set before fetch — intentional (see spec tradeoff)
+        }
 
         const res = await fetch(`${API_BASE}/api/customer-service/chat/`, {
           method: "POST",
@@ -127,7 +139,7 @@ export default function ChatWidget() {
         setLoading(false);
       }
     },
-    [loading, sessionId]
+    [loading, sessionId, contact]
   );
 
   const openChat = useCallback(() => {
