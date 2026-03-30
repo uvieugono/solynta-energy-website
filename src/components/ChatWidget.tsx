@@ -281,49 +281,110 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          {/* Messages area */}
-          <div className="flex-1 overflow-y-auto bg-gray-50 px-3 py-3 space-y-3 chat-scroll">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-solynta-yellow/20 text-solynta-slate border border-solynta-yellow/40 rounded-br-sm"
-                      : "bg-white text-solynta-slate border border-gray-200 rounded-bl-sm shadow-sm"
-                  }`}
-                >
-                  {msg.content}
-                </div>
+          {/* Capture screen or messages area */}
+          {view === "capture" ? (
+            <form
+              onSubmit={handleCaptureSubmit}
+              className="flex-1 flex flex-col justify-center px-5 py-6 gap-4 bg-gray-50"
+            >
+              <div>
+                <p className="text-lg font-semibold text-solynta-slate">👋 Before we start</p>
+                <p className="text-sm text-solynta-grey mt-1">
+                  Leave your details so we can follow up if we get cut off.
+                </p>
               </div>
-            ))}
 
-            {/* Typing indicator */}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-gray-200 rounded-xl rounded-bl-sm shadow-sm px-4 py-3 flex gap-1 items-center">
-                  <span
-                    className="w-2 h-2 rounded-full bg-solynta-grey animate-bounce"
-                    style={{ animationDelay: "0ms" }}
-                  />
-                  <span
-                    className="w-2 h-2 rounded-full bg-solynta-grey animate-bounce"
-                    style={{ animationDelay: "150ms" }}
-                  />
-                  <span
-                    className="w-2 h-2 rounded-full bg-solynta-grey animate-bounce"
-                    style={{ animationDelay: "300ms" }}
-                  />
-                </div>
+              <div>
+                <input
+                  ref={captureNameRef}
+                  type="text"
+                  placeholder="Full Name"
+                  value={captureName}
+                  onChange={(e) => {
+                    setCaptureName(e.target.value);
+                    if (captureErrors.name) setCaptureErrors((prev) => ({ ...prev, name: "" }));
+                  }}
+                  className="border border-border rounded-lg px-3 py-2 text-solynta-slate text-sm focus:outline-none focus:border-solynta-yellow bg-white w-full"
+                />
+                {captureErrors.name && (
+                  <p className="text-xs text-red-500 mt-1">{captureErrors.name}</p>
+                )}
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+
+              <div>
+                <input
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={capturePhone}
+                  onChange={(e) => {
+                    setCapturePhone(e.target.value);
+                    if (captureErrors.phone) setCaptureErrors((prev) => ({ ...prev, phone: "" }));
+                  }}
+                  className="border border-border rounded-lg px-3 py-2 text-solynta-slate text-sm focus:outline-none focus:border-solynta-yellow bg-white w-full"
+                />
+                {captureErrors.phone && (
+                  <p className="text-xs text-red-500 mt-1">{captureErrors.phone}</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="bg-solynta-yellow text-solynta-slate font-semibold w-full py-2 rounded-lg hover:brightness-95 transition-all text-sm"
+              >
+                Start Chatting →
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="text-sm text-solynta-grey underline cursor-pointer text-center"
+              >
+                Skip for now
+              </button>
+            </form>
+          ) : (
+            <div className="flex-1 overflow-y-auto bg-gray-50 px-3 py-3 space-y-3 chat-scroll">
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-solynta-yellow/20 text-solynta-slate border border-solynta-yellow/40 rounded-br-sm"
+                        : "bg-white text-solynta-slate border border-gray-200 rounded-bl-sm shadow-sm"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-xl rounded-bl-sm shadow-sm px-4 py-3 flex gap-1 items-center">
+                    <span
+                      className="w-2 h-2 rounded-full bg-solynta-grey animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <span
+                      className="w-2 h-2 rounded-full bg-solynta-grey animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    />
+                    <span
+                      className="w-2 h-2 rounded-full bg-solynta-grey animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    />
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
 
           {/* Suggestion chips */}
-          {suggestions.length > 0 && !loading && (
+          {view === "chat" && suggestions.length > 0 && !loading && (
             <div className="bg-gray-50 border-t border-gray-100 px-3 py-2 shrink-0">
               <div className="flex gap-2 overflow-x-auto pb-1 chat-scroll">
                 {suggestions.map((s, i) => (
@@ -340,35 +401,37 @@ export default function ChatWidget() {
           )}
 
           {/* Input area */}
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white border-t border-gray-200 px-3 py-2.5 flex items-center gap-2 shrink-0"
-          >
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type a message…"
-              disabled={loading}
-              className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-solynta-yellow transition-colors disabled:opacity-50 text-solynta-slate placeholder:text-gray-400"
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              aria-label="Send message"
-              className="w-9 h-9 rounded-lg bg-solynta-yellow text-solynta-slate flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0"
+          {view === "chat" && (
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white border-t border-gray-200 px-3 py-2.5 flex items-center gap-2 shrink-0"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-4 h-4"
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type a message…"
+                disabled={loading}
+                className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-solynta-yellow transition-colors disabled:opacity-50 text-solynta-slate placeholder:text-gray-400"
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                aria-label="Send message"
+                className="w-9 h-9 rounded-lg bg-solynta-yellow text-solynta-slate flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0"
               >
-                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-              </svg>
-            </button>
-          </form>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-4 h-4"
+                >
+                  <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                </svg>
+              </button>
+            </form>
+          )}
         </div>
       )}
     </>
