@@ -9,6 +9,9 @@ interface Message {
   content: string;
 }
 
+interface ContactInfo { name: string; phone: string; }
+type ChatView = "capture" | "chat";
+
 const WELCOME_MESSAGE: Message = {
   role: "assistant",
   content:
@@ -23,9 +26,17 @@ export default function ChatWidget() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [hasOpened, setHasOpened] = useState(false);
+  const [view, setView] = useState<ChatView>("capture");
+  const [contact, setContact] = useState<ContactInfo | null>(null);
+  const [captureName, setCaptureName] = useState("");
+  const [capturePhone, setCapturePhone] = useState("");
+  const [captureErrors, setCaptureErrors] = useState({ name: "", phone: "" });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const captureNameRef = useRef<HTMLInputElement>(null);
+  const contactSent = useRef(false);
+  const isCapturingRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,6 +45,12 @@ export default function ChatWidget() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading, scrollToBottom]);
+
+  useEffect(() => {
+    if (isOpen && view === "capture") {
+      setTimeout(() => captureNameRef.current?.focus(), 100);
+    }
+  }, [isOpen, view]);
 
   const fetchSuggestions = useCallback(async () => {
     try {
