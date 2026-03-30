@@ -67,6 +67,17 @@ export default function ChatWidget() {
     }
   }, []);
 
+  const startChat = useCallback(() => {
+    isCapturingRef.current = false;
+    setView("chat");
+    if (!hasOpened) {
+      setHasOpened(true);
+      setMessages([WELCOME_MESSAGE]);
+      fetchSuggestions();
+    }
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, [hasOpened, fetchSuggestions]);
+
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
