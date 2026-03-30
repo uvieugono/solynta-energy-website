@@ -131,14 +131,41 @@ export default function ChatWidget() {
   );
 
   const openChat = useCallback(() => {
-    setIsOpen(true);
-    if (!hasOpened) {
-      setHasOpened(true);
-      setMessages([WELCOME_MESSAGE]);
-      fetchSuggestions();
+    const raw = localStorage.getItem("solynta_chat_contact");
+    let parsed: ContactInfo | null = null;
+    let isKnownVisitor = false;
+
+    if (raw === "skipped") {
+      isKnownVisitor = true;
+    } else if (raw !== null) {
+      try {
+        const obj = JSON.parse(raw);
+        if (obj && typeof obj.name === "string" && typeof obj.phone === "string") {
+          parsed = obj;
+          isKnownVisitor = true;
+        } else {
+          // Unexpected shape — treat as absent
+          localStorage.removeItem("solynta_chat_contact");
+        }
+      } catch {
+        // Corrupt JSON — treat as absent
+        localStorage.removeItem("solynta_chat_contact");
+      }
     }
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }, [hasOpened, fetchSuggestions]);
+
+    if (!isKnownVisitor) {
+      // First visit (or cleared/corrupt localStorage) — show capture screen
+      isCapturingRef.current = true;
+      setView("capture");
+      setIsOpen(true);
+      return;
+    }
+
+    // Returning visitor — skip capture, go straight to chat
+    if (parsed) setContact(parsed);
+    setIsOpen(true);
+    startChat();
+  }, [startChat]);
 
   useEffect(() => {
     const handler = (e: Event) => {
