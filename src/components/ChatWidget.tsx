@@ -140,7 +140,7 @@ export default function ChatWidget() {
     } else if (raw !== null) {
       try {
         const obj = JSON.parse(raw);
-        if (obj && typeof obj.name === "string" && typeof obj.phone === "string") {
+        if (typeof obj === "object" && obj !== null && typeof obj.name === "string" && typeof obj.phone === "string") {
           parsed = obj;
           isKnownVisitor = true;
         } else {
