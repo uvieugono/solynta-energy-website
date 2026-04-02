@@ -204,11 +204,6 @@ export default function ChatWidget() {
     [captureName, capturePhone, startChat]
   );
 
-  const handleSkip = useCallback(() => {
-    localStorage.setItem("solynta_chat_contact", "skipped");
-    startChat();
-  }, [startChat]);
-
   useEffect(() => {
     const handler = (e: Event) => {
       const customEvent = e as CustomEvent<{ message: string }>;
@@ -334,13 +329,6 @@ export default function ChatWidget() {
                 Start Chatting →
               </button>
 
-              <button
-                type="button"
-                onClick={handleSkip}
-                className="text-sm text-solynta-grey underline cursor-pointer text-center"
-              >
-                Skip for now
-              </button>
             </form>
           ) : (
             <div className="flex-1 overflow-y-auto bg-gray-50 px-3 py-3 space-y-3 chat-scroll">
