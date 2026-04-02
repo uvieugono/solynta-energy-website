@@ -156,7 +156,7 @@ Reads from refs (not state). Returns a `SummaryPayload` or `null` if no messages
 
 ### Modified: widget close handler
 
-Calls `await sendSummary()` before setting `isOpen = false`. The `await` ensures the fetch request is dispatched before React unmounts the chat panel. Since the result is ignored (fire-and-forget), this adds negligible delay. The `beforeunload` listener acts as a safety net if the fetch is somehow aborted.
+Calls `void sendSummary()` then immediately sets `isOpen = false`. The close must be instant — `await` would block the UI on slow networks, making the button feel broken. The `beforeunload` listener acts as a safety net if the fetch is aborted by unmount.
 
 ### New: `beforeunload` listener
 
