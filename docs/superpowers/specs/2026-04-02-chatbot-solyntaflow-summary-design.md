@@ -42,11 +42,12 @@ All summary logic lives in `ChatWidget.tsx` (Approach A — frontend-only). This
 ```
 
 **Field notes:**
-- `contact` is `null` if the user skipped capture or localStorage was corrupt.
+- `contact` is `null` if the user skipped capture (via `handleSkip`) or localStorage was corrupt.
 - `session_id` is `null` if the first message never received a response (network failure before session established).
-- `started_at` is captured when `view` transitions to `"chat"`.
+- `started_at` is set once inside `startChat()` (only if not already set). Both `handleCaptureSubmit` and `handleSkip` call `startChat()`, so this covers all entry paths.
 - `ended_at` is captured at summary send time.
-- `message_count` is a convenience field (redundant with `messages.length`, useful for backend filtering).
+- `message_count` equals `messages.length` in the payload — i.e., the count for this summary segment, not the full conversation.
+- `messages` excludes the initial welcome message (`WELCOME_MESSAGE`). The welcome message is a hardcoded assistant greeting injected client-side — it was never sent through the API and has no real timestamp. `buildSummary()` filters it out by excluding the first message if it matches `WELCOME_MESSAGE.content`.
 
 ## Trigger Logic & Deduplication
 
@@ -86,7 +87,7 @@ User closes tab / navigates away
 
 ### Reopen after send
 
-If the user closes the widget (summary sent), reopens, and sends more messages, `summarySent.current` resets to `false` when a new message is added after a send. This ensures the continued conversation gets its own summary push.
+If the user closes the widget (summary sent), reopens, and sends more messages, `summarySent.current` resets to `false` when a new message is added after a send. At the same point, `startedAt` is set to the new message's timestamp (giving the new segment a fresh start time). A `summarySliceIndex` ref tracks the index up to which messages have been summarized. On the next send, `buildSummary()` only includes messages from `summarySliceIndex` forward. This prevents re-sending previously summarized messages.
 
 ## Ref Strategy
 
@@ -95,8 +96,10 @@ Since `sendBeacon` fires during unload and can't read React state reliably, we m
 - `messagesRef` — mirrors `messages` state
 - `sessionIdRef` — mirrors `sessionId` state
 - `contactRef` — mirrors `contact` state
-- `startedAt` ref — set once when chat view opens
+- `sourceUrlRef` — captures `window.location.href` when chat opens (avoids stale URL during `beforeunload`)
+- `startedAt` ref — set once inside `startChat()` (only if not already set)
 - `summarySent` ref — deduplication guard
+- `summarySliceIndex` ref — tracks message index up to which messages have been summarized
 
 This follows the existing pattern in ChatWidget (e.g., `isCapturingRef`).
 
@@ -106,11 +109,13 @@ This follows the existing pattern in ChatWidget (e.g., `isCapturingRef`).
 
 | Ref | Type | Purpose |
 |-----|------|---------|
-| `startedAt` | `string \| null` | ISO timestamp when chat view opened |
+| `startedAt` | `string \| null` | ISO timestamp, set once in `startChat()` |
 | `summarySent` | `boolean` | Deduplication guard |
+| `summarySliceIndex` | `number` | Message index after last summarized message |
 | `messagesRef` | `Message[]` | Mirror of messages state for sendBeacon |
 | `sessionIdRef` | `string \| null` | Mirror of sessionId state for sendBeacon |
 | `contactRef` | `ContactInfo \| null` | Mirror of contact state for sendBeacon |
+| `sourceUrlRef` | `string` | Captures `window.location.href` at chat open |
 
 ### Message interface change
 
@@ -128,20 +133,30 @@ Timestamps set:
 
 Non-breaking change — chat UI rendering ignores fields it doesn't use.
 
+### New type: `SummaryPayload`
+
+A TypeScript interface matching the JSON schema from the payload section. Used as the return type for `buildSummary()`.
+
 ### New function: `buildSummary()`
 
-Reads from refs (not state). Returns the payload object or `null` if no messages exist.
+Reads from refs (not state). Returns a `SummaryPayload` or `null` if no messages exist. Filters out the welcome message and slices from `summarySliceIndex` forward to avoid re-sending previously summarized messages. Reads `sourceUrlRef` for the URL (not `window.location.href`).
 
 ### New function: `sendSummary()`
 
 - Calls `buildSummary()`, returns early if `null` or `summarySent.current === true`.
 - POSTs via `fetch()` to `${API_BASE}/api/customer-service/chat/summary/`.
-- Sets `summarySent.current = true` before the request (optimistic).
+- Sets `summarySent.current = true` and updates `summarySliceIndex` to current messages length before the request (optimistic).
 - Fire-and-forget: no error handling (best-effort).
+- Both paths must ensure `Content-Type: application/json` — `fetch` sets it via headers, `sendBeacon` achieves it via a JSON `Blob` (see Backend Endpoint Spec).
+
+### Modified: `startChat()`
+
+- Sets `startedAt` ref to `new Date().toISOString()` (only if not already set).
+- Sets `sourceUrlRef` to `window.location.href`.
 
 ### Modified: widget close handler
 
-Calls `sendSummary()` before setting `isOpen = false`.
+Calls `await sendSummary()` before setting `isOpen = false`. The `await` ensures the fetch request is dispatched before React unmounts the chat panel. Since the result is ignored (fire-and-forget), this adds negligible delay. The `beforeunload` listener acts as a safety net if the fetch is somehow aborted.
 
 ### New: `beforeunload` listener
 
@@ -168,9 +183,13 @@ Each message gets a `timestamp` field when added to state. `messagesRef.current`
 
 ### Response
 
-- `200 OK` — `{ "status": "received" }`
+- `201 Created` — `{ "status": "received" }` (resource created — a new summary record)
 - `400 Bad Request` — missing required fields (`messages` must be non-empty)
 - `500 Internal Server Error` — server-side failure
+
+### Authentication & rate limiting
+
+The endpoint is unauthenticated, consistent with the existing chat endpoints. Backend should implement basic rate limiting (e.g., by IP or session_id) to prevent abuse.
 
 ### sendBeacon Content-Type
 
@@ -202,7 +221,7 @@ This spec covers the endpoint contract. The actual backend implementation (stori
 | Multiple rapid open/close cycles | First close sends, subsequent skip. Resets when new message added after send |
 | `session_id` is null | Summary still sent — backend uses contact + messages |
 | `contact` is null | Summary still sent with `contact: null` |
-| Very long conversation (100+ msgs) | `sendBeacon` ~64KB limit ≈ 300+ messages. If exceeded, fails silently — acceptable |
+| Very long conversation (100+ msgs) | `sendBeacon` ~64KB limit. Estimate is ~300+ short messages, but long messages (pasted code, product descriptions) reduce this. If `buildSummary()` serialized payload exceeds 60KB, truncate individual message `content` fields to keep within limit. Fails silently if still exceeded — acceptable |
 
 ## Acceptance Criteria
 
@@ -210,7 +229,7 @@ This spec covers the endpoint contract. The actual backend implementation (stori
 2. Closing the browser tab after a conversation sends the summary via `sendBeacon`.
 3. Only one summary is sent per conversation segment (deduplication works).
 4. No summary is sent if the user never chatted.
-5. Reopening the widget and chatting more triggers a new summary on next close.
+5. Reopening the widget and chatting more triggers a new summary on next close, containing only the new messages (not previously summarized ones).
 6. All messages include ISO 8601 timestamps.
 7. Contact info is included when available, `null` when not.
 8. The payload matches the schema defined in this spec.
