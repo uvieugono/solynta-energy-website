@@ -267,7 +267,8 @@ export default function ChatWidget() {
     let isKnownVisitor = false;
 
     if (raw === "skipped") {
-      isKnownVisitor = true;
+      // Legacy value from removed "Skip" button — clear it so the capture form shows
+      localStorage.removeItem("solynta_chat_contact");
     } else if (raw !== null) {
       try {
         const obj = JSON.parse(raw);
