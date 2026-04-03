@@ -93,6 +93,10 @@ export default function ChatWidget() {
   const startChat = useCallback(() => {
     isCapturingRef.current = false;
     setView("chat");
+    if (!startedAtRef.current) {
+      startedAtRef.current = new Date().toISOString();
+    }
+    sourceUrlRef.current = window.location.href;
     if (!hasOpened) {
       setHasOpened(true);
       setMessages([WELCOME_MESSAGE]);
