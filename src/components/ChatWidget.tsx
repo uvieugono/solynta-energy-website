@@ -7,6 +7,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://solyntaflow.uc.r.a
 interface Message {
   role: "user" | "assistant";
   content: string;
+  timestamp: string;
 }
 
 interface ContactInfo { name: string; phone: string; }
@@ -16,6 +17,7 @@ const WELCOME_MESSAGE: Message = {
   role: "assistant",
   content:
     "Hi! I'm the Solynta Energy AI assistant. I can help you choose a solar package, answer questions about our services, or assist existing customers. How can I help?",
+  timestamp: "",
 };
 
 export default function ChatWidget() {
@@ -84,7 +86,7 @@ export default function ChatWidget() {
       const trimmed = text.trim();
       if (!trimmed || loading) return;
 
-      const userMsg: Message = { role: "user", content: trimmed };
+      const userMsg: Message = { role: "user", content: trimmed, timestamp: new Date().toISOString() };
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
       setLoading(true);
@@ -121,6 +123,7 @@ export default function ChatWidget() {
         const assistantMsg: Message = {
           role: "assistant",
           content: data.response ?? "I received your message.",
+          timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, assistantMsg]);
 
@@ -133,6 +136,7 @@ export default function ChatWidget() {
             role: "assistant",
             content:
               "Sorry, I'm having trouble connecting. Please try again or call us at +234(0)705 300 8625.",
+            timestamp: new Date().toISOString(),
           },
         ]);
       } finally {
