@@ -105,6 +105,68 @@ export default function ChatWidget() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [hasOpened, fetchSuggestions]);
 
+  const buildSummary = useCallback((): SummaryPayload | null => {
+    const allMessages = messagesRef.current;
+    // Filter out welcome message and slice from last summary point
+    const startIdx = summarySliceIndexRef.current;
+    const segment = allMessages.slice(startIdx).filter(
+      (msg) => msg.content !== WELCOME_MESSAGE.content || msg.role !== "assistant"
+    );
+    if (segment.length === 0) return null;
+
+    const payload: SummaryPayload = {
+      session_id: sessionIdRef.current,
+      contact: contactRef.current,
+      source_url: sourceUrlRef.current,
+      started_at: startedAtRef.current ?? new Date().toISOString(),
+      ended_at: new Date().toISOString(),
+      message_count: segment.length,
+      messages: segment.map((m) => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      })),
+    };
+
+    // Truncate if payload exceeds 60KB (sendBeacon ~64KB limit)
+    const serialized = JSON.stringify(payload);
+    if (serialized.length > 60_000) {
+      const maxContentLen = Math.max(
+        Math.floor((60_000 / segment.length) - 100),
+        50
+      );
+      payload.messages = segment.map((m) => ({
+        role: m.role,
+        content: m.content.length > maxContentLen
+          ? m.content.slice(0, maxContentLen) + "…"
+          : m.content,
+        timestamp: m.timestamp,
+      }));
+    }
+
+    return payload;
+  }, []);
+
+  const sendSummary = useCallback(async () => {
+    if (summarySentRef.current) return;
+    const payload = buildSummary();
+    if (!payload) return;
+
+    summarySentRef.current = true;
+    summarySliceIndexRef.current = messagesRef.current.length;
+    startedAtRef.current = null;
+
+    try {
+      await fetch(`${API_BASE}/api/customer-service/chat/summary/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Fire-and-forget — best effort
+    }
+  }, [buildSummary]);
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (isCapturingRef.current) return;
