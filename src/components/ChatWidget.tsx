@@ -167,6 +167,25 @@ export default function ChatWidget() {
     }
   }, [buildSummary]);
 
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (summarySentRef.current) return;
+      const payload = buildSummary();
+      if (!payload) return;
+
+      summarySentRef.current = true;
+      summarySliceIndexRef.current = messagesRef.current.length;
+
+      navigator.sendBeacon(
+        `${API_BASE}/api/customer-service/chat/summary/`,
+        new Blob([JSON.stringify(payload)], { type: "application/json" })
+      );
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [buildSummary]);
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (isCapturingRef.current) return;
@@ -175,6 +194,11 @@ export default function ChatWidget() {
 
       const userMsg: Message = { role: "user", content: trimmed, timestamp: new Date().toISOString() };
       setMessages((prev) => [...prev, userMsg]);
+      // Reset summary guard if a new message arrives after a previous summary was sent
+      if (summarySentRef.current) {
+        summarySentRef.current = false;
+        startedAtRef.current = new Date().toISOString();
+      }
       setInput("");
       setLoading(true);
       setSuggestions([]);
@@ -350,7 +374,10 @@ export default function ChatWidget() {
               <span className="text-white font-semibold text-sm">Solynta Energy</span>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                void sendSummary();
+                setIsOpen(false);
+              }}
               aria-label="Close chat"
               className="text-white/70 hover:text-white transition-colors p-1 rounded"
             >
