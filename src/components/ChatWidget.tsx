@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://solyntaflow.uc.r.appspot.com";
 
@@ -71,9 +71,9 @@ export default function ChatWidget() {
     }
   }, [isOpen, view]);
 
-  useEffect(() => { messagesRef.current = messages; }, [messages]);
-  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
-  useEffect(() => { contactRef.current = contact; }, [contact]);
+  useLayoutEffect(() => { messagesRef.current = messages; }, [messages]);
+  useLayoutEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  useLayoutEffect(() => { contactRef.current = contact; }, [contact]);
 
   const fetchSuggestions = useCallback(async () => {
     try {
@@ -150,7 +150,11 @@ export default function ChatWidget() {
   const sendSummary = useCallback(async () => {
     if (summarySentRef.current) return;
     const payload = buildSummary();
-    if (!payload) return;
+    if (!payload) {
+      // No messages to send — reset so next open gets a fresh timestamp
+      startedAtRef.current = null;
+      return;
+    }
 
     summarySentRef.current = true;
     summarySliceIndexRef.current = messagesRef.current.length;
