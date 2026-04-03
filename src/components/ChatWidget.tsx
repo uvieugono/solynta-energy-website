@@ -13,6 +13,16 @@ interface Message {
 interface ContactInfo { name: string; phone: string; }
 type ChatView = "capture" | "chat";
 
+interface SummaryPayload {
+  session_id: string | null;
+  contact: ContactInfo | null;
+  source_url: string;
+  started_at: string;
+  ended_at: string;
+  message_count: number;
+  messages: { role: "user" | "assistant"; content: string; timestamp: string }[];
+}
+
 const WELCOME_MESSAGE: Message = {
   role: "assistant",
   content:
@@ -39,6 +49,13 @@ export default function ChatWidget() {
   const captureNameRef = useRef<HTMLInputElement>(null);
   const contactSent = useRef(false);
   const isCapturingRef = useRef(false);
+  const startedAtRef = useRef<string | null>(null);
+  const summarySentRef = useRef(false);
+  const summarySliceIndexRef = useRef(0);
+  const messagesRef = useRef<Message[]>([]);
+  const sessionIdRef = useRef<string | null>(null);
+  const contactRef = useRef<ContactInfo | null>(null);
+  const sourceUrlRef = useRef("");
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,6 +70,10 @@ export default function ChatWidget() {
       setTimeout(() => captureNameRef.current?.focus(), 100);
     }
   }, [isOpen, view]);
+
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  useEffect(() => { contactRef.current = contact; }, [contact]);
 
   const fetchSuggestions = useCallback(async () => {
     try {
